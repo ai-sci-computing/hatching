@@ -250,12 +250,14 @@ double lArg(int n, double ti, double tj, double tk) {
 
     double pi_n = M_PI * static_cast<double>(n);
 
+    // The function winds n times around the barycenter.
+    // At corners: lArg(n,1,0,0)=0, lArg(n,0,1,0)=2πn/3, lArg(n,0,0,1)=4πn/3.
     if (tk <= ti && tk <= tj) {
-        return pi_n / 3.0 * (1.0 + (ti - tj) / (1.0 - 3.0 * tk));
+        return pi_n / 3.0 * (1.0 + (tj - ti) / (1.0 - 3.0 * tk));
     } else if (ti <= tj && ti <= tk) {
-        return pi_n / 3.0 * (3.0 + (tj - tk) / (1.0 - 3.0 * ti));
+        return pi_n / 3.0 * (3.0 + (tk - tj) / (1.0 - 3.0 * ti));
     } else {
-        return pi_n / 3.0 * (5.0 + (tk - ti) / (1.0 - 3.0 * tj));
+        return pi_n / 3.0 * (5.0 + (ti - tk) / (1.0 - 3.0 * tj));
     }
 }
 
@@ -292,9 +294,6 @@ StripePattern compute_texture_coordinates(
         double v_jk = c_jk * omega(e_jk);
 
         // Spinning form: accumulate texture coordinates per face.
-        // δ = arg(e^{iv} z_from / z_to) is the angular "error".
-        // σ = v - δ is the actual angular displacement.
-        // Jumps across edges are multiples of 2π (invisible under cos).
         double alpha_i = std::arg(z_i);
 
         double alpha_j = alpha_i + v_ij -
@@ -303,10 +302,24 @@ StripePattern compute_texture_coordinates(
         double alpha_k = alpha_j + v_jk -
             std::arg(std::exp(Complex(0, v_jk)) * z_j / z_k);
 
+        // Compute winding number (Alg 7 lines 25-27).
+        double v_ki = ((vk < vi) ? 1 : -1) * omega(e_ki);
+        double alpha_i2 = alpha_k + v_ki -
+            std::arg(std::exp(Complex(0, v_ki)) * z_k / z_i);
+        int n_ijk = static_cast<int>(
+            std::round((alpha_i2 - alpha_i) / (2.0 * M_PI)));
+        result.face_index(f) = n_ijk;
+
+        // Adjust corners for singularities (Alg 7 lines 28-29).
+        // Subtract the lArg corner values so the shader can add lArg(bary)
+        // to get the correct nonlinear interpolation near zeros.
+        double correction = 2.0 * M_PI * n_ijk / 3.0;
+        alpha_j -= correction;
+        alpha_k -= 2.0 * correction;
+
         result.alpha(f, 0) = alpha_i;
         result.alpha(f, 1) = alpha_j;
         result.alpha(f, 2) = alpha_k;
-        result.face_index(f) = 0;
     }
 
     return result;

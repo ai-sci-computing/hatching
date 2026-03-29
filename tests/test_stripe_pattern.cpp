@@ -41,16 +41,11 @@ TEST(StripePattern, LArgContinuousAtBarycenter) {
 }
 
 TEST(StripePattern, LArgBarycentricCorners) {
-    // At corners, verify the lArg values match the formula.
-    // For n=1: lArg(1, 1, 0, 0): tk=0 is smallest =>
-    //   pi/3 * (1 + (1-0)/(1-0)) = pi/3 * 2 = 2pi/3
-    // lArg(1, 0, 1, 0): tk=0 is smallest (tie with ti=0, but tk<=ti holds)
-    //   pi/3 * (1 + (0-1)/(1-0)) = pi/3 * 0 = 0
-    // lArg(1, 0, 0, 1): ti=0 is smallest =>
-    //   pi/3 * (3 + (0-1)/(1-0)) = pi/3 * 2 = 2pi/3
-    EXPECT_NEAR(lArg(1, 1.0, 0.0, 0.0), 2.0 * M_PI / 3.0, 1e-10);
-    EXPECT_NEAR(lArg(1, 0.0, 1.0, 0.0), 0.0, 1e-10);
-    EXPECT_NEAR(lArg(1, 0.0, 0.0, 1.0), 2.0 * M_PI / 3.0, 1e-10);
+    // At corners, lArg should give evenly spaced values: 0, 2πn/3, 4πn/3.
+    // For n=1:
+    EXPECT_NEAR(lArg(1, 1.0, 0.0, 0.0), 0.0, 1e-10);
+    EXPECT_NEAR(lArg(1, 0.0, 1.0, 0.0), 2.0 * M_PI / 3.0, 1e-10);
+    EXPECT_NEAR(lArg(1, 0.0, 0.0, 1.0), 4.0 * M_PI / 3.0, 1e-10);
 }
 
 // ===========================================================================

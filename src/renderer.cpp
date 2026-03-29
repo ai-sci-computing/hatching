@@ -116,15 +116,17 @@ bool Renderer::init(const std::string& shader_dir) {
 
 void Renderer::upload_mesh(const TriangleMesh& mesh,
                             const StripePattern& pattern) {
+    // Vertex layout: pos(3) + normal(3) + alpha(1) + bary(3) + n_ijk(1) = 11
     int nf = mesh.num_faces();
     int num_verts = nf * 3;
-    std::vector<float> vdata(num_verts * 7);
+    const int stride = 11;
+    std::vector<float> vdata(num_verts * stride);
 
     for (int f = 0; f < nf; ++f) {
         for (int k = 0; k < 3; ++k) {
             int v = mesh.F(f, k);
             Eigen::Vector3d vn = mesh.vertex_normal(v);
-            int base = (f * 3 + k) * 7;
+            int base = (f * 3 + k) * stride;
             vdata[base + 0] = static_cast<float>(mesh.V(v, 0));
             vdata[base + 1] = static_cast<float>(mesh.V(v, 1));
             vdata[base + 2] = static_cast<float>(mesh.V(v, 2));
@@ -132,6 +134,12 @@ void Renderer::upload_mesh(const TriangleMesh& mesh,
             vdata[base + 4] = static_cast<float>(vn.y());
             vdata[base + 5] = static_cast<float>(vn.z());
             vdata[base + 6] = static_cast<float>(pattern.alpha(f, k));
+            // Barycentric coordinates: (1,0,0), (0,1,0), (0,0,1).
+            vdata[base + 7] = (k == 0) ? 1.0f : 0.0f;
+            vdata[base + 8] = (k == 1) ? 1.0f : 0.0f;
+            vdata[base + 9] = (k == 2) ? 1.0f : 0.0f;
+            // Face index (winding number of psi around this face).
+            vdata[base + 10] = static_cast<float>(pattern.face_index(f));
         }
     }
 
@@ -155,15 +163,21 @@ void Renderer::upload_mesh(const TriangleMesh& mesh,
                  static_cast<long>(indices.size() * sizeof(unsigned int)),
                  indices.data(), GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float),
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float),
                           nullptr);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float),
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float),
                           reinterpret_cast<void*>(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 7 * sizeof(float),
+    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, stride * sizeof(float),
                           reinterpret_cast<void*>(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float),
+                          reinterpret_cast<void*>(7 * sizeof(float)));
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, stride * sizeof(float),
+                          reinterpret_cast<void*>(10 * sizeof(float)));
+    glEnableVertexAttribArray(4);
     glBindVertexArray(0);
 }
 
