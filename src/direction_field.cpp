@@ -381,7 +381,7 @@ DirectionField compute_direction_field(const TriangleMesh& mesh, double s,
     // where q̃ is the Hopf differential (RHS).  λ_t = 0 gives maximum
     // smoothing; more negative λ_t gives stronger curvature alignment.
     // Use -q̃ to align with minimum curvature direction (Sec. 6.1.2).
-    Eigen::VectorXcd q_tilde = -geom.hopf_differential;
+    Eigen::VectorXcd q_tilde = geom.hopf_differential;
     result.u = compute_aligned_field(A, M, q_tilde, lambda_t);
 
     // Pointwise normalize: the field defines directions, not magnitudes.

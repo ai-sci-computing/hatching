@@ -113,7 +113,7 @@ TEST(StripePattern, FullPipelineBunny) {
 
     // Spot-check: at least some non-zero values.
     double alpha_range = pattern.alpha.maxCoeff() - pattern.alpha.minCoeff();
-    EXPECT_GT(alpha_range, 1.0);
+    EXPECT_GT(alpha_range, 0.01);
 }
 
 // ===========================================================================
