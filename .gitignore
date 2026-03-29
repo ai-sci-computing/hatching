@@ -1,0 +1,6 @@
+build/
+.venv/
+*.o
+.DS_Store
+diagnose*
+*.pyc
