@@ -28,6 +28,9 @@ struct StripePattern {
     /// @brief Per-face index n_ijk (winding number around zeros).
     Eigen::VectorXi face_index;
 
+    /// @brief Debug: raw holonomy/(2π) before rounding.
+    Eigen::VectorXd face_index_raw;
+
     /// @brief Per-face flag: true if the face is a branch triangle
     ///        (needs barycentric subdivision for rendering).
     std::vector<bool> is_branch_triangle;
@@ -98,7 +101,8 @@ StripePattern compute_texture_coordinates(
 StripePattern compute_stripe_pattern(const TriangleMesh& mesh,
                                       const DirectionField& field,
                                       const MeshGeometry& geom,
-                                      double frequency = 20.0);
+                                      double frequency = 20.0,
+                                      bool use_psi_one = false);
 
 /// @brief The lArg interpolant for singularity resolution (Eq. 11).
 ///

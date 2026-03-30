@@ -139,7 +139,7 @@ void Renderer::upload_mesh(const TriangleMesh& mesh,
             vdata[base + 8] = (k == 1) ? 1.0f : 0.0f;
             vdata[base + 9] = (k == 2) ? 1.0f : 0.0f;
             // Face index (winding number of psi around this face).
-            vdata[base + 10] = static_cast<float>(pattern.face_index(f));
+            vdata[base + 10] = static_cast<float>(pattern.face_index_raw(f));
         }
     }
 

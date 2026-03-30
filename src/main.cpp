@@ -109,7 +109,7 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Computing stripe pattern..." << std::endl;
     StripePattern pattern =
-        compute_stripe_pattern(mesh, field, geom, param_frequency);
+        compute_stripe_pattern(mesh, field, geom, param_frequency, true);
     std::cout << "  Done." << std::endl;
 
     // --- Initialize GLFW and OpenGL ---
@@ -189,6 +189,7 @@ int main(int argc, char* argv[]) {
     // --- Main loop ---
     bool needs_recompute = false;
     bool show_field = false;
+    bool use_psi_one = true;
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -228,6 +229,9 @@ int main(int argc, char* argv[]) {
                            10.0f);
         ImGui::SliderFloat("stripe width", &param_stripe_width, 0.0f, 1.0f);
         ImGui::Checkbox("Show direction field", &show_field);
+        if (ImGui::Checkbox("psi = 1 (test omega only)", &use_psi_one)) {
+            needs_recompute = true;
+        }
         ImGui::Separator();
 
         if (ImGui::Button("Recompute") || needs_recompute) {
@@ -236,7 +240,7 @@ int main(int argc, char* argv[]) {
 
             field = compute_direction_field(mesh, param_s, param_lambda);
             pattern = compute_stripe_pattern(mesh, field, geom,
-                                             param_frequency);
+                                             param_frequency, use_psi_one);
             renderer.upload_mesh(mesh, pattern);
             renderer.upload_field(mesh, geom, field);
 

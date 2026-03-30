@@ -80,6 +80,16 @@ void main() {
     vec3 ink_color = vec3(0.05, 0.05, 0.1);
 
     vec3 base = mix(ink_color, paper_color, hatch);
+
+    // Debug: color face by raw n_ijk value (before rounding).
+    // Red = positive, blue = negative, intensity = magnitude.
+    float raw_n = v_face_index;
+    if (abs(raw_n) > 0.01) {
+        float intensity = clamp(abs(raw_n), 0.0, 3.0) / 3.0;
+        vec3 debug_color = (raw_n > 0.0) ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 0.0, 1.0);
+        base = mix(base, debug_color, intensity * 0.8);
+    }
+
     vec3 color = base * shading;
 
     frag_color = vec4(color, 1.0);

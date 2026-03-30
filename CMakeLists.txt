@@ -115,6 +115,12 @@ add_custom_command(TARGET hatching POST_BUILD
 )
 
 # ===========================================================================
+# Diagnostic tools (no OpenGL needed)
+# ===========================================================================
+add_executable(diagnose_omega tools/diagnose_omega.cpp)
+target_link_libraries(diagnose_omega PRIVATE hatching_core)
+
+# ===========================================================================
 # Tests
 # ===========================================================================
 enable_testing()
