@@ -11,7 +11,6 @@ flat in float v_face_index;  // face winding number n_ijk (flat = per-face)
 uniform vec3 u_eye;
 uniform float u_stripe_frequency;
 uniform float u_stripe_width;
-
 out vec4 frag_color;
 
 /// lArg interpolant (Eq. 11, Knoeppel 2015).
@@ -31,10 +30,13 @@ float lArg(int n, float ti, float tj, float tk) {
 }
 
 void main() {
-    // --- Shading ---
+    // --- Shading (two-sided) ---
     vec3 N = normalize(v_normal);
     vec3 V = normalize(u_eye - v_position);
     vec3 L = normalize(vec3(0.5, 1.0, 0.3));
+
+    // Flip normal to face the camera for correct two-sided lighting.
+    if (dot(N, V) < 0.0) N = -N;
 
     float NdotL = max(dot(N, L), 0.0);
     float ambient = 0.15;
@@ -51,11 +53,16 @@ void main() {
     // these adjusted values.  We add lArg evaluated at the fragment's
     // barycentric coordinates to get the correct nonlinear interpolation
     // near singularities (zeros of psi).
+    // Add lArg correction for singularity handling at n!=0 faces.
     int n_ijk = int(round(v_face_index));
     float alpha = v_alpha + lArg(n_ijk, v_bary.x, v_bary.y, v_bary.z);
 
-    // Convert to stripe units (period = 1) and apply visual frequency.
-    float V_tex = alpha * u_stripe_frequency / (2.0 * 3.14159265359);
+    // Convert to stripe units with pi-periodic texture function.
+    // The stripe pattern must be symmetric under the deck transformation
+    // psi -> -psi (i.e., alpha -> alpha + pi), so we use period pi
+    // instead of 2*pi.  This makes branch-cut crossings (s=-1 edges)
+    // invisible, since they shift alpha by pi.
+    float V_tex = alpha * u_stripe_frequency / 3.14159265359;
 
     // Triangle wave via fract (handles integer jumps, symmetric under negation).
     float sawtooth = fract(V_tex);
