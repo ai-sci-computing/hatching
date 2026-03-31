@@ -264,7 +264,8 @@ void Renderer::upload_field(const TriangleMesh& mesh,
 
 void Renderer::render(const Camera& camera, float aspect,
                        float stripe_frequency, float stripe_width,
-                       bool show_field) {
+                       bool show_field,
+                       float light_x, float light_y, float light_z) {
     Eigen::Matrix4f view = camera.view_matrix();
     Eigen::Matrix4f proj = camera.projection_matrix(aspect);
     Eigen::Vector3d cam_pos = camera.position();
@@ -282,6 +283,8 @@ void Renderer::render(const Camera& camera, float aspect,
                     static_cast<float>(cam_pos.x()),
                     static_cast<float>(cam_pos.y()),
                     static_cast<float>(cam_pos.z()));
+        glUniform3f(glGetUniformLocation(shader_program_, "u_light_dir"),
+                    light_x, light_y, light_z);
         glUniform1f(
             glGetUniformLocation(shader_program_, "u_stripe_frequency"),
             stripe_frequency);

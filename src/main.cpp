@@ -184,15 +184,22 @@ int main(int argc, char* argv[]) {
     renderer.upload_field(mesh, geom, field);
 
     glEnable(GL_DEPTH_TEST);
-    glClearColor(0.85f, 0.85f, 0.85f, 1.0f);
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
     // --- Main loop ---
     bool needs_recompute = false;
     bool show_field = false;
     bool use_psi_one = false;
+    float light_angle = 0.4f; // radians, rotates around Y axis in camera space
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
+
+        // Arrow keys rotate light in camera space.
+        if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+            light_angle -= 0.02f;
+        if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+            light_angle += 0.02f;
 
         // ImGui frame.
         ImGui_ImplOpenGL3_NewFrame();
@@ -264,8 +271,27 @@ int main(int argc, char* argv[]) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         float aspect = static_cast<float>(fb_w) / static_cast<float>(fb_h);
+
+        // Light direction in camera space: slightly from above, rotatable.
+        // Extract camera axes from the view matrix.
+        Eigen::Matrix4f V_mat = g_camera.view_matrix();
+        Eigen::Vector3d cam_right(V_mat(0,0), V_mat(0,1), V_mat(0,2));
+        Eigen::Vector3d cam_up(V_mat(1,0), V_mat(1,1), V_mat(1,2));
+        Eigen::Vector3d cam_forward(-V_mat(2,0), -V_mat(2,1), -V_mat(2,2));
+
+        // Light in camera space: rotate around Y, tilted slightly up.
+        float lx = std::sin(light_angle);
+        float ly = 0.5f; // slightly from above
+        float lz = std::cos(light_angle);
+        // Transform to world space.
+        Eigen::Vector3d light_dir = lx * cam_right + ly * cam_up - lz * cam_forward;
+        light_dir.normalize();
+
         renderer.render(g_camera, aspect, param_stripe_freq,
-                        param_stripe_width, show_field);
+                        param_stripe_width, show_field,
+                        static_cast<float>(light_dir.x()),
+                        static_cast<float>(light_dir.y()),
+                        static_cast<float>(light_dir.z()));
 
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(window);
