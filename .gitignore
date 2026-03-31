@@ -1,6 +1,11 @@
 build/
+web/build/
 .venv/
 *.o
 .DS_Store
 diagnose*
 *.pyc
+*.pdf
+docs/
+screenshots/
+imgui.ini
