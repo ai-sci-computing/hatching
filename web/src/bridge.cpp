@@ -88,11 +88,64 @@ static bool parse_obj_string(const std::string& obj_data, TriangleMesh& mesh) {
     return true;
 }
 
-bool loadOBJ(const std::string& obj_data) {
+static bool parse_off_string(const std::string& off_data, TriangleMesh& mesh) {
+    std::istringstream stream(off_data);
+    std::string header;
+    stream >> header;
+    if (header != "OFF") return false;
+
+    int nv, nf, ne;
+    stream >> nv >> nf >> ne;
+    if (nv <= 0 || nf <= 0) return false;
+
+    mesh.V.resize(nv, 3);
+    for (int i = 0; i < nv; ++i) {
+        stream >> mesh.V(i, 0) >> mesh.V(i, 1) >> mesh.V(i, 2);
+    }
+
+    std::vector<int> faces;
+    for (int i = 0; i < nf; ++i) {
+        int fv;
+        stream >> fv;
+        std::vector<int> verts(fv);
+        for (int j = 0; j < fv; ++j) stream >> verts[j];
+        for (int j = 1; j + 1 < fv; ++j) {
+            faces.push_back(verts[0]);
+            faces.push_back(verts[j]);
+            faces.push_back(verts[j + 1]);
+        }
+    }
+
+    int ntri = static_cast<int>(faces.size()) / 3;
+    mesh.F.resize(ntri, 3);
+    for (int i = 0; i < ntri; ++i) {
+        mesh.F(i, 0) = faces[3 * i + 0];
+        mesh.F(i, 1) = faces[3 * i + 1];
+        mesh.F(i, 2) = faces[3 * i + 2];
+    }
+
+    mesh.build_topology();
+    return true;
+}
+
+bool loadMesh(const std::string& data, const std::string& filename) {
     g_mesh = TriangleMesh{};
     g_vertex_buffer.clear();
     g_num_render_verts = 0;
-    return parse_obj_string(obj_data, g_mesh);
+
+    // Detect format from extension or content.
+    bool is_off = false;
+    if (filename.size() >= 4 &&
+        filename.substr(filename.size() - 4) == ".off") {
+        is_off = true;
+    } else if (data.size() >= 3 && data.substr(0, 3) == "OFF") {
+        is_off = true;
+    }
+
+    if (is_off) {
+        return parse_off_string(data, g_mesh);
+    }
+    return parse_obj_string(data, g_mesh);
 }
 
 bool compute(double frequency, double s, double lambda, bool perpendicular) {
@@ -101,7 +154,11 @@ bool compute(double frequency, double s, double lambda, bool perpendicular) {
     MeshGeometry geom = compute_geometry(g_mesh, 2);
     DirectionField field = compute_direction_field(g_mesh, s, lambda);
     if (perpendicular) field.u = -field.u;
-    StripePattern pattern = compute_stripe_pattern(g_mesh, field, geom, frequency);
+    Eigen::Vector3d bb_lo = g_mesh.V.colwise().minCoeff();
+    Eigen::Vector3d bb_hi = g_mesh.V.colwise().maxCoeff();
+    double diameter = (bb_hi - bb_lo).norm();
+    double freq_scale = 2.0 * M_PI / diameter;
+    StripePattern pattern = compute_stripe_pattern(g_mesh, field, geom, frequency * freq_scale);
 
     // Build vertex buffer — same layout as renderer.cpp.
     // Stride: pos(3) + normal(3) + alpha(1) + bary(3) + n_ijk(1) = 11
@@ -173,7 +230,7 @@ double getMeshExtent() {
 }
 
 EMSCRIPTEN_BINDINGS(hatching_web) {
-    emscripten::function("loadOBJ", &loadOBJ);
+    emscripten::function("loadMesh", &loadMesh);
     emscripten::function("compute", &compute);
     emscripten::function("getVertexBuffer", &getVertexBuffer);
     emscripten::function("getNumVertices", &getNumVertices);

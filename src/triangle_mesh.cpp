@@ -6,6 +6,7 @@
 #include <tiny_obj_loader.h>
 
 #include <cmath>
+#include <fstream>
 #include <set>
 #include <stdexcept>
 
@@ -64,6 +65,54 @@ bool TriangleMesh::load_obj(const std::string& path) {
 
     build_topology();
     return true;
+}
+
+bool TriangleMesh::load_off(const std::string& path) {
+    std::ifstream file(path);
+    if (!file.is_open()) return false;
+
+    std::string header;
+    file >> header;
+    if (header != "OFF") return false;
+
+    int nv, nf, ne;
+    file >> nv >> nf >> ne;
+    if (nv <= 0 || nf <= 0) return false;
+
+    V.resize(nv, 3);
+    for (int i = 0; i < nv; ++i) {
+        file >> V(i, 0) >> V(i, 1) >> V(i, 2);
+    }
+
+    // Read faces, triangulating polygons with a fan from vertex 0.
+    std::vector<Eigen::Vector3i> tris;
+    tris.reserve(nf);
+    for (int i = 0; i < nf; ++i) {
+        int fv;
+        file >> fv;
+        std::vector<int> verts(fv);
+        for (int j = 0; j < fv; ++j) {
+            file >> verts[j];
+        }
+        for (int j = 1; j + 1 < fv; ++j) {
+            tris.push_back({verts[0], verts[j], verts[j + 1]});
+        }
+    }
+
+    F.resize(static_cast<int>(tris.size()), 3);
+    for (int i = 0; i < static_cast<int>(tris.size()); ++i) {
+        F.row(i) = tris[i];
+    }
+
+    build_topology();
+    return true;
+}
+
+bool TriangleMesh::load(const std::string& path) {
+    if (path.size() >= 4 && path.substr(path.size() - 4) == ".off") {
+        return load_off(path);
+    }
+    return load_obj(path);
 }
 
 // ---------------------------------------------------------------------------

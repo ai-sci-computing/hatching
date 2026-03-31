@@ -179,7 +179,7 @@ function loadMesh(objText, name) {
 
     statusEl.textContent = `Loading ${name}...`;
 
-    if (!Module.loadOBJ(objText)) {
+    if (!Module.loadMesh(objText, name)) {
         statusEl.textContent = `Failed to parse ${name}`;
         return;
     }

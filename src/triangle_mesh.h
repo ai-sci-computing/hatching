@@ -50,6 +50,16 @@ public:
     /// @return True on success.
     bool load_obj(const std::string& path);
 
+    /// @brief Load a mesh from an OFF file.
+    /// @param path Path to the .off file.
+    /// @return True on success.
+    bool load_off(const std::string& path);
+
+    /// @brief Load a mesh, detecting format from the file extension.
+    /// @param path Path to a .obj or .off file.
+    /// @return True on success.
+    bool load(const std::string& path);
+
     /// @brief Build edge list and adjacency from V and F.
     ///
     /// Must be called after V and F are populated (either via load_obj or

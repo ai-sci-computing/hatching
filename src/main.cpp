@@ -80,7 +80,7 @@ int main(int argc, char* argv[]) {
     // --- Load mesh ---
     std::cout << "Loading mesh: " << mesh_path << std::endl;
     TriangleMesh mesh;
-    if (!mesh.load_obj(mesh_path)) {
+    if (!mesh.load(mesh_path)) {
         std::cerr << "Failed to load mesh: " << mesh_path << std::endl;
         return 1;
     }
@@ -109,9 +109,16 @@ int main(int argc, char* argv[]) {
     std::cout << "  Singularities: " << pos_sing << " positive, " << neg_sing
               << " negative, sum=" << sing_sum << std::endl;
 
+    // Normalize frequency: slider value gives approximate number of
+    // stripes across the mesh (independent of mesh scale).
+    Eigen::Vector3d bb_lo = mesh.V.colwise().minCoeff();
+    Eigen::Vector3d bb_hi = mesh.V.colwise().maxCoeff();
+    double diameter = (bb_hi - bb_lo).norm();
+    double freq_scale = 2.0 * M_PI / diameter;
+
     std::cout << "Computing stripe pattern..." << std::endl;
     StripePattern pattern =
-        compute_stripe_pattern(mesh, field, geom, param_frequency);
+        compute_stripe_pattern(mesh, field, geom, param_frequency * freq_scale);
     std::cout << "  Done." << std::endl;
 
     // --- Initialize GLFW and OpenGL ---
@@ -242,7 +249,7 @@ int main(int argc, char* argv[]) {
             needs_recompute = false;
             DirectionField field_for_pattern = field;
             if (perpendicular) field_for_pattern.u = -field_for_pattern.u;
-            pattern = compute_stripe_pattern(mesh, field_for_pattern, geom, param_frequency);
+            pattern = compute_stripe_pattern(mesh, field_for_pattern, geom, param_frequency * freq_scale);
             renderer.upload_mesh(mesh, pattern);
         }
 
