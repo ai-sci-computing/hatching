@@ -109,7 +109,7 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Computing stripe pattern..." << std::endl;
     StripePattern pattern =
-        compute_stripe_pattern(mesh, field, geom, param_frequency, true);
+        compute_stripe_pattern(mesh, field, geom, param_frequency);
     std::cout << "  Done." << std::endl;
 
     // --- Initialize GLFW and OpenGL ---
@@ -189,7 +189,7 @@ int main(int argc, char* argv[]) {
     // --- Main loop ---
     bool needs_recompute = false;
     bool show_field = false;
-    bool use_psi_one = true;
+    bool use_psi_one = false;
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();

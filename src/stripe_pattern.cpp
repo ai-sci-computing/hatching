@@ -78,11 +78,9 @@ compute_edge_data(const TriangleMesh& mesh, const MeshGeometry& geom,
             sigma_j_matched = -sigma(j);
         }
 
-        // Angular displacement omega_ij (Eq. 6-7 of stripe paper).
-        // Trapezoidal rule for the integral of the projected frequency
-        // 1-form ν·cos(X - edge_dir) along the edge.
-        // At i (outgoing): ν_i · ê_ij = freq_i · Re(conj(σ_i) · e^{iθ_ij})
-        // At j (incoming): ν_j · ê_{j←i} = -freq_j · Re(conj(σ_j) · e^{iθ_ji})
+        // Angular displacement omega_ij (Algorithm 3, line 7).
+        // φ_i = arg(X_i), φ_j = arg(s·X_j)  (sigma_j_matched encodes s)
+        // ω = ℓ/2 (ν_i cos(φ_i - θ_ij) + ν_j cos(φ_j - θ_ji))
         double proj_i = frequency(i) *
             (std::conj(sigma(i)) * std::exp(Complex(0, theta_ij))).real();
         double proj_j = frequency(j) *
@@ -126,21 +124,34 @@ build_stripe_energy_matrix(const TriangleMesh& mesh,
         double c = std::cos(omega(e));
         double sn = std::sin(omega(e));
 
-        // Energy matrix (Algorithm 4):
-        //   s ≥ 0: A_ij = -w · [e^{iω}]
-        //   s < 0: A_ij = -w · [conj(e^{iω})] = -w · [e^{-iω}]
-        // A_ji = A_ij^T.
-        double se = (s(e) >= 0) ? 1.0 : -1.0;
-        double sn_eff = se * sn;  // flip sin for s < 0 (conjugation)
-        triplets.push_back({i, j, -w * c});
-        triplets.push_back({i, j + nv, w * sn_eff});
-        triplets.push_back({i + nv, j, -w * sn_eff});
-        triplets.push_back({i + nv, j + nv, -w * c});
-
-        triplets.push_back({j, i, -w * c});
-        triplets.push_back({j, i + nv, -w * sn_eff});
-        triplets.push_back({j + nv, i, w * sn_eff});
-        triplets.push_back({j + nv, i + nv, -w * c});
+        // Energy matrix (Algorithm 4, Section 4.1).
+        // Paper defines [z] = [[x,y],[-y,x]] and [z̄] = [[x,-y],[-y,-x]]
+        // for z = x+yi.  These are NOT the standard multiplication matrices.
+        //   s ≥ 0: A_ij = -w [e^{iω}],   A_ji = A_ij^T
+        //   s < 0: A_ij = -w [̄e^{iω}],   A_ji = A_ij^T
+        if (s(e) >= 0) {
+            // -w [[c,s],[-s,c]]
+            triplets.push_back({i, j, -w * c});
+            triplets.push_back({i, j + nv, -w * sn});
+            triplets.push_back({i + nv, j, w * sn});
+            triplets.push_back({i + nv, j + nv, -w * c});
+            // A_ji = A_ij^T
+            triplets.push_back({j, i, -w * c});
+            triplets.push_back({j, i + nv, w * sn});
+            triplets.push_back({j + nv, i, -w * sn});
+            triplets.push_back({j + nv, i + nv, -w * c});
+        } else {
+            // -w [[c,-s],[-s,-c]]
+            triplets.push_back({i, j, -w * c});
+            triplets.push_back({i, j + nv, w * sn});
+            triplets.push_back({i + nv, j, w * sn});
+            triplets.push_back({i + nv, j + nv, w * c});
+            // A_ji = A_ij^T (symmetric for unit z)
+            triplets.push_back({j, i, -w * c});
+            triplets.push_back({j, i + nv, w * sn});
+            triplets.push_back({j + nv, i, w * sn});
+            triplets.push_back({j + nv, i + nv, w * c});
+        }
 
         triplets.push_back({i, i, w});
         triplets.push_back({i + nv, i + nv, w});
