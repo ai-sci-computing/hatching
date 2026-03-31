@@ -6,6 +6,7 @@ web/build/
 diagnose*
 *.pyc
 *.pdf
+*.obj
 docs/
 screenshots/
 imgui.ini
