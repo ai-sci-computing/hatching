@@ -190,6 +190,8 @@ int main(int argc, char* argv[]) {
 
     // --- Main loop ---
     bool show_field = false;
+    bool perpendicular = false;
+    bool needs_recompute = false;
     float light_angle = 0.4f; // radians, rotates around Y axis in camera space
 
     while (!glfwWindowShouldClose(window)) {
@@ -224,6 +226,25 @@ int main(int argc, char* argv[]) {
 
         ImGui::Text("Rendering");
         ImGui::SliderInt("stripe frequency", &param_stripe_freq, 1, 10);
+        ImGui::Separator();
+
+        ImGui::Text("Direction Field");
+        int freq_int = static_cast<int>(param_frequency);
+        if (ImGui::SliderInt("line frequency", &freq_int, 5, 200)) {
+            param_frequency = static_cast<float>(freq_int);
+            needs_recompute = true;
+        }
+        if (ImGui::Checkbox("perpendicular", &perpendicular)) {
+            needs_recompute = true;
+        }
+
+        if (needs_recompute) {
+            needs_recompute = false;
+            DirectionField field_for_pattern = field;
+            if (perpendicular) field_for_pattern.u = -field_for_pattern.u;
+            pattern = compute_stripe_pattern(mesh, field_for_pattern, geom, param_frequency);
+            renderer.upload_mesh(mesh, pattern);
+        }
 
         ImGui::End();
         ImGui::Render();
