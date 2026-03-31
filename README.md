@@ -12,7 +12,7 @@ NPR hatching renderer based on globally optimal direction fields and stripe patt
 - **Stripe patterns** (Knoeppel et al. 2015) — globally continuous texture coordinates on the implicit double cover, singularity handling via lArg interpolant
 - **NPR hatching shader** — stripe width modulated by diffuse shading, silhouette and contour edges, antialiased rendering
 - **Interactive controls** — dark/bright threshold, shading amount, stripe frequency, line frequency, perpendicular field toggle
-- **Web version** — Emscripten/WebAssembly build with WebGL2, drag-and-drop OBJ loading, no server required
+- **Web version** — Emscripten/WebAssembly build with WebGL2, drag-and-drop OBJ/OFF loading, no server required
 
 ## Building
 
@@ -42,7 +42,8 @@ Serve `web/build/` with any HTTP server (e.g. `python3 -m http.server 8080`) and
 
 ```bash
 ./build/hatching                 # Loads bunny.obj from current directory
-./build/hatching mesh.obj        # Load a specific OBJ file
+./build/hatching mesh.obj        # Load an OBJ file
+./build/hatching mesh.off        # Load an OFF file
 ```
 
 ### Controls
