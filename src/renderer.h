@@ -32,7 +32,8 @@ public:
 
     /// @brief Render one frame.
     void render(const Camera& camera, float aspect, float stripe_frequency,
-                float stripe_width, bool show_field,
+                float black_threshold, float white_threshold,
+                float shading_amount, bool show_field,
                 float light_x = 0.5f, float light_y = 1.0f, float light_z = 0.3f);
 
     /// @brief Clean up GPU resources.

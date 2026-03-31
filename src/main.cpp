@@ -92,8 +92,10 @@ int main(int argc, char* argv[]) {
     float param_s = 0.0f;
     float param_lambda = 0.0f;
     float param_frequency = 40.0f;
-    float param_stripe_freq = 1.0f;
-    float param_stripe_width = 0.4f;
+    int param_stripe_freq = 1;
+    float param_black_threshold = 0.05f;
+    float param_white_threshold = 0.6f;
+    float param_shading_amount = 1.0f;
 
     std::cout << "Computing geometry..." << std::endl;
     MeshGeometry geom = compute_geometry(mesh, 2);
@@ -187,9 +189,7 @@ int main(int argc, char* argv[]) {
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
     // --- Main loop ---
-    bool needs_recompute = false;
     bool show_field = false;
-    bool use_psi_one = false;
     float light_angle = 0.4f; // radians, rotates around Y axis in camera space
 
     while (!glfwWindowShouldClose(window)) {
@@ -212,54 +212,18 @@ int main(int argc, char* argv[]) {
         ImGui::Text("V=%d  F=%d  E=%d  chi=%d", mesh.num_vertices(),
                      mesh.num_faces(), mesh.num_edges(),
                      mesh.euler_characteristic());
+        ImGui::Text("Singularities: %d+ %d- (sum=%d)", pos_sing, neg_sing,
+                     sing_sum);
         ImGui::Separator();
 
-        ImGui::Text("Direction Field");
-        if (ImGui::SliderFloat("s (smoothness type)", &param_s, -1.0f,
-                               1.0f)) {
-            needs_recompute = true;
-        }
-        if (ImGui::SliderFloat("lambda_t (alignment)", &param_lambda,
-                               -100.0f, 0.0f)) {
-            needs_recompute = true;
-        }
-        ImGui::Separator();
-
-        ImGui::Text("Stripe Pattern");
-        if (ImGui::SliderFloat("frequency", &param_frequency, 1.0f, 200.0f)) {
-            needs_recompute = true;
-        }
+        ImGui::Text("Shading");
+        ImGui::SliderFloat("dark threshold", &param_black_threshold, 0.0f, 1.0f);
+        ImGui::SliderFloat("bright threshold", &param_white_threshold, 0.0f, 1.0f);
+        ImGui::SliderFloat("shading amount", &param_shading_amount, 0.0f, 1.0f);
         ImGui::Separator();
 
         ImGui::Text("Rendering");
-        ImGui::SliderFloat("visual frequency", &param_stripe_freq, 0.1f,
-                           10.0f);
-        ImGui::SliderFloat("stripe width", &param_stripe_width, 0.0f, 1.0f);
-        ImGui::Checkbox("Show direction field", &show_field);
-        if (ImGui::Checkbox("psi = 1 (test omega only)", &use_psi_one)) {
-            needs_recompute = true;
-        }
-        ImGui::Separator();
-
-        if (ImGui::Button("Recompute") || needs_recompute) {
-            needs_recompute = false;
-            std::cout << "Recomputing..." << std::endl;
-
-            field = compute_direction_field(mesh, param_s, param_lambda);
-            pattern = compute_stripe_pattern(mesh, field, geom,
-                                             param_frequency, use_psi_one);
-            renderer.upload_mesh(mesh, pattern);
-            renderer.upload_field(mesh, geom, field);
-
-            sing_sum = field.singularity_index.sum();
-            pos_sing = (field.singularity_index.array() > 0).count();
-            neg_sing = (field.singularity_index.array() < 0).count();
-            std::cout << "  Singularities: " << pos_sing << "+"
-                      << neg_sing << "- sum=" << sing_sum << std::endl;
-        }
-
-        ImGui::Text("Singularities: %d+ %d- (sum=%d)", pos_sing, neg_sing,
-                     sing_sum);
+        ImGui::SliderInt("stripe frequency", &param_stripe_freq, 1, 10);
 
         ImGui::End();
         ImGui::Render();
@@ -287,8 +251,9 @@ int main(int argc, char* argv[]) {
         Eigen::Vector3d light_dir = lx * cam_right + ly * cam_up - lz * cam_forward;
         light_dir.normalize();
 
-        renderer.render(g_camera, aspect, param_stripe_freq,
-                        param_stripe_width, show_field,
+        renderer.render(g_camera, aspect, static_cast<float>(param_stripe_freq),
+                        param_black_threshold, param_white_threshold,
+                        param_shading_amount, show_field,
                         static_cast<float>(light_dir.x()),
                         static_cast<float>(light_dir.y()),
                         static_cast<float>(light_dir.z()));

@@ -263,8 +263,9 @@ void Renderer::upload_field(const TriangleMesh& mesh,
 }
 
 void Renderer::render(const Camera& camera, float aspect,
-                       float stripe_frequency, float stripe_width,
-                       bool show_field,
+                       float stripe_frequency,
+                       float black_threshold, float white_threshold,
+                       float shading_amount, bool show_field,
                        float light_x, float light_y, float light_z) {
     Eigen::Matrix4f view = camera.view_matrix();
     Eigen::Matrix4f proj = camera.projection_matrix(aspect);
@@ -289,8 +290,14 @@ void Renderer::render(const Camera& camera, float aspect,
             glGetUniformLocation(shader_program_, "u_stripe_frequency"),
             stripe_frequency);
         glUniform1f(
-            glGetUniformLocation(shader_program_, "u_stripe_width"),
-            stripe_width);
+            glGetUniformLocation(shader_program_, "u_black_threshold"),
+            black_threshold);
+        glUniform1f(
+            glGetUniformLocation(shader_program_, "u_white_threshold"),
+            white_threshold);
+        glUniform1f(
+            glGetUniformLocation(shader_program_, "u_shading_amount"),
+            shading_amount);
 
         glBindVertexArray(vao_);
         glDrawElements(GL_TRIANGLES, num_indices_, GL_UNSIGNED_INT, nullptr);
