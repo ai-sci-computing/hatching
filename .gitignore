@@ -1,0 +1,13 @@
+build/
+web/build/
+.venv/
+*.o
+.DS_Store
+diagnose*
+*.pyc
+*.pdf
+*.obj
+*.off
+docs/
+screenshots/
+imgui.ini

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stripe Patterns on Surfaces</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #f5f5f5;
+    color: #333;
+    overflow: hidden;
+    height: 100vh;
+}
+
+#container {
+    display: flex;
+    height: 100vh;
+}
+
+#sidebar {
+    width: 280px;
+    min-width: 280px;
+    background: #fff;
+    border-right: 1px solid #ddd;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+#sidebar h1 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+#sidebar h2 {
+    font-size: 13px;
+    font-weight: 600;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.slider-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.slider-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.slider-row label {
+    font-size: 12px;
+    color: #555;
+    display: flex;
+    justify-content: space-between;
+}
+
+.slider-row input[type="range"] {
+    width: 100%;
+    cursor: pointer;
+}
+
+#mesh-info {
+    font-size: 12px;
+    color: #888;
+    line-height: 1.6;
+}
+
+#status {
+    font-size: 12px;
+    color: #888;
+    margin-top: auto;
+    padding-top: 12px;
+    border-top: 1px solid #eee;
+}
+
+#canvas-wrap {
+    flex: 1;
+    position: relative;
+    background: #fff;
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+#drop-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.95);
+    z-index: 10;
+    transition: opacity 0.2s;
+}
+
+#drop-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#drop-overlay.drag-active {
+    background: rgba(230, 240, 255, 0.95);
+}
+
+.drop-content {
+    text-align: center;
+    color: #888;
+}
+
+.drop-content .icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+}
+
+.drop-content p {
+    font-size: 14px;
+}
+
+.drop-content .hint {
+    font-size: 12px;
+    color: #aaa;
+    margin-top: 6px;
+}
+
+#computing-overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.8);
+    z-index: 20;
+}
+
+#computing-overlay.active {
+    display: flex;
+}
+
+#computing-overlay p {
+    font-size: 16px;
+    color: #555;
+}
+
+#separator {
+    width: 1px;
+    background: #ddd;
+}
+</style>
+</head>
+<body>
+
+<div id="container">
+    <div id="sidebar">
+        <div>
+            <h1>Stripe Patterns</h1>
+            <div id="mesh-info">No mesh loaded</div>
+        </div>
+
+        <div>
+            <h2>Shading</h2>
+            <div class="slider-group">
+                <div class="slider-row">
+                    <label>dark threshold <span id="val-dark">0.05</span></label>
+                    <input type="range" id="dark-threshold" min="0" max="1" step="0.01" value="0.05">
+                </div>
+                <div class="slider-row">
+                    <label>bright threshold <span id="val-bright">0.60</span></label>
+                    <input type="range" id="bright-threshold" min="0" max="1" step="0.01" value="0.60">
+                </div>
+                <div class="slider-row">
+                    <label>shading amount <span id="val-shading">1.00</span></label>
+                    <input type="range" id="shading-amount" min="0" max="1" step="0.01" value="1.00">
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h2>Rendering</h2>
+            <div class="slider-group">
+                <div class="slider-row">
+                    <label>stripe frequency <span id="val-freq">1</span></label>
+                    <input type="range" id="stripe-freq" min="1" max="10" step="1" value="1">
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h2>Direction Field</h2>
+            <div class="slider-group">
+                <div class="slider-row">
+                    <label>line frequency <span id="val-line-freq">40</span></label>
+                    <input type="range" id="line-freq" min="5" max="200" step="1" value="40">
+                </div>
+                <div class="slider-row">
+                    <label><input type="checkbox" id="perpendicular"> perpendicular</label>
+                </div>
+            </div>
+        </div>
+
+        <div id="status">Loading WASM module...</div>
+    </div>
+
+    <div id="canvas-wrap">
+        <canvas id="canvas"></canvas>
+        <div id="drop-overlay">
+            <div class="drop-content">
+                <div class="icon">&#9651;</div>
+                <p>Drop an OBJ or OFF file here</p>
+                <p class="hint">or wait for the default mesh to load</p>
+            </div>
+        </div>
+        <div id="computing-overlay">
+            <p>Computing stripe pattern...</p>
+        </div>
+    </div>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

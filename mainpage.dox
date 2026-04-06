@@ -1,0 +1,66 @@
+/**
+@mainpage Hatching — Stripe Patterns on Surfaces
+
+@section intro Overview
+
+This project implements the stripe pattern pipeline from two papers by
+Knoeppel, Crane, Pinkall, and Schroeder:
+
+1. **Globally Optimal Direction Fields** (SIGGRAPH 2013) — computes a smooth
+   curvature-aligned 2-direction field on a triangle mesh via a sparse
+   eigenvalue problem.
+
+2. **Stripe Patterns on Surfaces** (SIGGRAPH 2015) — given a direction field
+   and target line frequency, computes globally continuous texture coordinates
+   that produce stripe patterns, handling singularities via the lArg
+   interpolant and barycentric subdivision.
+
+The result is rendered with an NPR hatching shader that modulates stripe
+width by shading, producing pen-and-ink style illustrations.
+
+@section arch Architecture
+
+The code is organized into a core library (no graphics dependencies) and
+two frontends:
+
+- **hatching_core** — the algorithm library:
+  - @ref hatching::TriangleMesh — mesh data structure with topology
+  - @ref hatching::MeshGeometry — discrete differential geometry operators
+    (angle rescaling, parallel transport, holonomy, cotangent weights,
+    Hopf differential)
+  - @ref hatching::DirectionField — globally optimal direction fields
+    (Algorithms 1–3 of Knoeppel 2013)
+  - @ref hatching::StripePattern — stripe pattern computation
+    (Algorithms 3–7 of Knoeppel 2015)
+
+- **Desktop app** (`src/main.cpp`, `src/renderer.cpp`, `src/camera.cpp`) —
+  OpenGL 4.1 / GLFW / Dear ImGui viewer with interactive parameter controls.
+
+- **Web app** (`web/`) — Emscripten/WebAssembly build of the core library
+  with a WebGL2 renderer, for browser-based viewing.
+
+@section pipeline Pipeline
+
+The computation proceeds in stages:
+
+1. **Load mesh** and build edge/face topology (@ref hatching::TriangleMesh::build_topology).
+2. **Compute geometry**: angle rescaling, transport angles, holonomy,
+   cotangent weights, Hopf differential (@ref hatching::compute_geometry).
+3. **Compute direction field**: build energy and mass matrices, solve the
+   eigenvalue problem, extract curvature-aligned field
+   (@ref hatching::compute_direction_field).
+4. **Compute stripe pattern**: project field onto edges (Algorithm 3),
+   build stripe energy matrix (Algorithm 4), solve for the stripe field
+   (Algorithm 6), extract texture coordinates (Algorithm 7)
+   (@ref hatching::compute_stripe_pattern).
+5. **Render**: upload per-corner texture coordinates to the GPU; the
+   fragment shader evaluates cos(alpha + lArg) to produce stripes, with
+   width modulated by diffuse shading for NPR hatching.
+
+@section refs References
+
+- F. Knoeppel, K. Crane, U. Pinkall, P. Schroeder.
+  *Globally Optimal Direction Fields.* ACM Trans. Graph. 32(4), 2013.
+- F. Knoeppel, K. Crane, U. Pinkall, P. Schroeder.
+  *Stripe Patterns on Surfaces.* ACM Trans. Graph. 34(4), 2015.
+*/
